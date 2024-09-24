@@ -102,8 +102,6 @@ public final class Main extends JavaPlugin implements Listener
      */
     public static boolean hasTitleBug(Player player)
     {
-        if(Main.hasViaVersion)
-            return !(ViaVersionCompat.isClientVersionGreaterThan1_16_5(player));
         return !Main.is_v_17_more;
     }
 

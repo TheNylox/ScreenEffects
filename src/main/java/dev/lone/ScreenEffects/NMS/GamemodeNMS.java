@@ -23,51 +23,9 @@ public class GamemodeNMS
 
     private GamemodeNMS()
     {
-        //<editor-fold desc="Legacy shit">
-        switch (MinecraftVersion.getVersion())
-        {
-            case MC1_14_R1:
-                nms = new GamemodeNMS_v1_14_R1();
-                break;
-            case MC1_15_R1:
-                nms = new GamemodeNMS_v1_15_R1();
-                break;
-            case MC1_16_R3:
-                nms = new GamemodeNMS_v1_16_R3();
-                break;
-            case MC1_17_R1:
-                nms = new GamemodeNMS_v1_17_R1();
-                break;
-            case MC1_18_R2:
-                nms = new GamemodeNMS_v1_18_R2();
-                break;
-            case MC1_19_R1:
-                nms = new GamemodeNMS_v1_19_R1();
-                break;
-            case MC1_19_R2:
-                nms = new GamemodeNMS_v1_19_R2();
-                break;
-            case MC1_19_R3:
-                nms = new GamemodeNMS_v1_19_R3();
-                break;
-            case MC1_20_R1:
-                nms = new GamemodeNMS_v1_20_R1();
-                break;
-            case MC1_20_R2:
-                nms = new GamemodeNMS_v1_20_R2();
-                break;
-            case MC1_20_R3:
-                nms = new GamemodeNMS_v1_20_R3();
-                break;
-        }
-        //</editor-fold>
-
         //<editor-fold desc="Modern">
         switch (Version.get())
         {
-            case v1_20_6:
-                nms = new GamemodeNMS_v1_20_6();
-                break;
             case v1_21_1:
                 nms = new GamemodeNMS_v1_21_1();
                 break;

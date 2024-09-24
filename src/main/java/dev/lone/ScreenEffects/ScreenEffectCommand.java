@@ -1,9 +1,13 @@
 package dev.lone.ScreenEffects;
 
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.events.PacketContainer;
 import dev.lone.ScreenEffects.NMS.GamemodeNMS;
 import dev.lone.itemsadder.api.FontImages.FontImageWrapper;
 import net.md_5.bungee.api.ChatColor;
+import net.minecraft.network.protocol.game.PacketPlayOutGameStateChange;
 import org.bukkit.Bukkit;
+import org.bukkit.WeatherType;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -34,6 +38,12 @@ public class ScreenEffectCommand implements CommandExecutor, TabCompleter
     @Override
     public boolean onCommand(@NotNull CommandSender commandSender, @NotNull Command command, @NotNull String s, @NotNull String[] args)
     {
+        if(args[0] == "clear"){
+            clearWeather(Bukkit.getPlayer(args[1]));
+            return false;
+        }
+
+
         List<Player> toShow = new ArrayList<>();
         int playerIndex = 6;
 
@@ -79,7 +89,7 @@ public class ScreenEffectCommand implements CommandExecutor, TabCompleter
             return true;
         }
 
-        //if stop
+        // Se il comando è "stop"
         if(playerIndex == 1)
         {
             for (Player player : toShow)
@@ -108,7 +118,7 @@ public class ScreenEffectCommand implements CommandExecutor, TabCompleter
                 color = ChatColor.valueOf(args[1]);
             } catch (Exception e)
             {
-                //hex support
+                // Supporto per codici esadecimali (es. #770000)
                 try
                 {
                     color = ChatColor.of(args[1]);
@@ -129,7 +139,6 @@ public class ScreenEffectCommand implements CommandExecutor, TabCompleter
             image = ChatColor.stripColor(image);
             image = color + image;
 
-            //https://hub.spigotmc.org/jira/browse/SPIGOT-6608?jql=text%20~%20%22sendtitle%22
             String message = "";
             if (args.length >= 8)
             {
@@ -148,8 +157,12 @@ public class ScreenEffectCommand implements CommandExecutor, TabCompleter
             for (Player player : toShow)
             {
                 showEffect(player, message, image, fadein, stay, fadeout, freeze);
+                clearWeather(player); // Rimuove la pioggia client-side
             }
         }
+        for (Player player : toShow)
+            clearWeather(player); // Rimuove la pioggia client-side
+
         return true;
     }
 
@@ -272,4 +285,10 @@ public class ScreenEffectCommand implements CommandExecutor, TabCompleter
 
         return Collections.singletonList("");
     }
+
+    private void clearWeather(Player player) {
+        player.setPlayerWeather(WeatherType.CLEAR);
+        player.sendMessage(player.getPlayerWeather().toString());
+    }
+
 }
