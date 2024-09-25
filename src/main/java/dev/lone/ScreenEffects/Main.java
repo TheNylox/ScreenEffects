@@ -1,7 +1,15 @@
 package dev.lone.ScreenEffects;
 
+import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
+import com.comphenix.protocol.ProtocolManager;
+import com.comphenix.protocol.events.ListeningWhitelist;
+import com.comphenix.protocol.events.PacketAdapter;
+import com.comphenix.protocol.events.PacketEvent;
+import com.comphenix.protocol.events.PacketListener;
 import dev.lone.LoneLibs.nbt.nbtapi.utils.MinecraftVersion;
 import dev.lone.ScreenEffects.NMS.GamemodeNMS;
+import net.minecraft.network.protocol.Packet;
 import org.apache.commons.io.FileUtils;
 import org.bukkit.Bukkit;
 import org.bukkit.ChatColor;
@@ -11,18 +19,20 @@ import org.bukkit.event.Listener;
 import org.bukkit.event.player.PlayerJoinEvent;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
+import org.bukkit.plugin.Plugin;
 import org.bukkit.plugin.java.JavaPlugin;
 
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
 import java.security.CodeSource;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.WeakHashMap;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipInputStream;
 
-public final class Main extends JavaPlugin implements Listener
-{
+public final class Main extends JavaPlugin implements Listener {
     private static Main instance;
     public static boolean isPapermc = false;
     public static boolean showWarnOnJoin = false;
@@ -30,20 +40,20 @@ public final class Main extends JavaPlugin implements Listener
     public static boolean is_v_17_more;
     public static boolean hasViaVersion;
     public static boolean hasPlaceholderAPI;
+    private ProtocolManager protocolManager;
 
     public WeakHashMap<Player, Boolean> frozen = new WeakHashMap<>();
     private ScreenEffectCommand screenEffectCommand;
 
     public static dev.lone.LoneLibs.chat.Msg msg;
 
-    public static Main inst()
-    {
+    public static Main inst() {
         return instance;
     }
 
     @Override
-    public void onEnable()
-    {
+    public void onEnable() {
+
         instance = this;
 
         msg = new dev.lone.LoneLibs.chat.Msg("[ScreenEffects] ");
@@ -52,7 +62,8 @@ public final class Main extends JavaPlugin implements Listener
 
         try {
             isPapermc = Class.forName("com.destroystokyo.paper.VersionHistoryManager$VersionData") != null;
-        } catch (ClassNotFoundException e) {}
+        } catch (ClassNotFoundException e) {
+        }
 
         is_v_17_more = MinecraftVersion.isAtLeastVersion(MinecraftVersion.MC1_17_R1);
         hasViaVersion = Bukkit.getPluginManager().isPluginEnabled("ViaVersion");
@@ -60,17 +71,15 @@ public final class Main extends JavaPlugin implements Listener
 
         //<editor-fold desc="Check lonelibs compatibility">
         boolean isLoneLibsCompatible = false;
-        try
-        {
+        try {
             //noinspection UnnecessaryFullyQualifiedName
             dev.lone.LoneLibs.LoneLibs.CompareVersionResult compareVersionResult = dev.lone.LoneLibs.LoneLibs.compareVersion("1.0.24");
             //noinspection UnnecessaryFullyQualifiedName
             isLoneLibsCompatible = compareVersionResult == dev.lone.LoneLibs.LoneLibs.CompareVersionResult.INSTALLED_IS_SAME
                     || compareVersionResult == dev.lone.LoneLibs.LoneLibs.CompareVersionResult.INSTALLED_IS_NEWER;
+        } catch (Throwable ignored) {
         }
-        catch (Throwable ignored) {}
-        if(!isLoneLibsCompatible)
-        {
+        if (!isLoneLibsCompatible) {
             getLogger().severe("Please update LoneLibs! https://www.spigotmc.org/resources/lonelibs.75974/");
             Bukkit.getPluginManager().disablePlugin(this);
             Bukkit.shutdown();
@@ -93,41 +102,34 @@ public final class Main extends JavaPlugin implements Listener
      * 1.15.2, 1.16.5, 1.19.3
      * title = message
      * subtitle = image
-     *
+     * <p>
      * 1.17.1, 1.18.2
      * title = image
      * subtitle = message
-     *
+     * <p>
      * On some versions the rendering order of title and subtitle layers are inverted.
      */
-    public static boolean hasTitleBug(Player player)
-    {
+    public static boolean hasTitleBug(Player player) {
         return !Main.is_v_17_more;
     }
 
-    private void extractDefaultStuff()
-    {
+    private void extractDefaultStuff() {
         CodeSource src = Main.class.getProtectionDomain().getCodeSource();
-        if (src != null)
-        {
+        if (src != null) {
             URL jar = src.getLocation();
             ZipInputStream zip = null;
-            try
-            {
+            try {
                 msg.log(ChatColor.AQUA + "    Extracting default effects from .jar");
 
                 zip = new ZipInputStream(jar.openStream());
-                while (true)
-                {
+                while (true) {
                     ZipEntry e = zip.getNextEntry();
                     if (e == null)
                         break;
                     String name = e.getName();
-                    if (!e.isDirectory() && name.startsWith("contents/"))
-                    {
+                    if (!e.isDirectory() && name.startsWith("contents/")) {
                         File dest = new File((this.getDataFolder().getParent() + "/ItemsAdder/" + name).replace("/", File.separator));
-                        if (!dest.exists())
-                        {
+                        if (!dest.exists()) {
                             FileUtils.copyInputStreamToFile(this.getResource(name), dest);
                             msg.log(ChatColor.AQUA + "       - Extracted " + name);
                             showWarnOnJoin = true;
@@ -136,33 +138,28 @@ public final class Main extends JavaPlugin implements Listener
                 }
                 msg.log(ChatColor.GREEN + "      DONE extracting default effects from .jar");
 
-            } catch (IOException e)
-            {
+            } catch (IOException e) {
                 msg.error("        ERROR EXTRACTING DEFAULT effects! StackTrace:");
                 e.printStackTrace();
             }
         }
 
-        if(showWarnOnJoin)
-        {
+        if (showWarnOnJoin) {
             msg.warn("Please don't forget to regen your resourcepack using /iazip command.");
         }
     }
 
     @EventHandler
-    public void onMove(PlayerMoveEvent e)
-    {
-        if(frozen.containsKey(e.getPlayer()))
+    public void onMove(PlayerMoveEvent e) {
+        if (frozen.containsKey(e.getPlayer()))
             e.setCancelled(true);
     }
 
     @EventHandler
-    public void onJoin(PlayerJoinEvent e)
-    {
-        if(!showWarnOnJoin)
+    public void onJoin(PlayerJoinEvent e) {
+        if (!showWarnOnJoin)
             return;
-        if(e.getPlayer().isOp())
-        {
+        if (e.getPlayer().isOp()) {
             Bukkit.getScheduler().runTaskLater(this, () -> {
                 msg.send(e.getPlayer(), ChatColor.RED + "Please don't forget to regen your resourcepack using /iazip command.");
             }, 60L);
@@ -171,8 +168,7 @@ public final class Main extends JavaPlugin implements Listener
     }
 
     @EventHandler
-    private void onQuit(PlayerQuitEvent e)
-    {
+    private void onQuit(PlayerQuitEvent e) {
         screenEffectCommand.sentTitles.remove(e.getPlayer());
     }
 }

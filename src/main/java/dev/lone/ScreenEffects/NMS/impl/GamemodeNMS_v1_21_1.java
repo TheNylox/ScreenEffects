@@ -1,6 +1,7 @@
 package dev.lone.ScreenEffects.NMS.impl;
 
 import com.comphenix.protocol.PacketType;
+import com.comphenix.protocol.ProtocolLibrary;
 import com.comphenix.protocol.events.PacketContainer;
 import dev.lone.ScreenEffects.NMS.GamemodeNMS;
 import dev.lone.ScreenEffects.NMS.IGamemodeNMS;
@@ -32,10 +33,21 @@ public class GamemodeNMS_v1_21_1 implements IGamemodeNMS
     @Override
     public void setGamemode(Player player, float gamemode)
     {
-        PacketContainer packet = new PacketContainer(PacketType.Play.Server.GAME_STATE_CHANGE);
-        packet.getSpecificModifier(PacketPlayOutGameStateChange.a.class).write(0, PacketPlayOutGameStateChange.d);
-        packet.getFloat().write(0, gamemode);
-        GamemodeNMS.sendPacket(player, packet);
+        try {
+            // Crea il pacchetto GAME_STATE_CHANGE
+            PacketContainer packet = ProtocolLibrary.getProtocolManager().createPacket(PacketType.Play.Server.GAME_STATE_CHANGE);
+
+            // Imposta il tipo di cambiamento: 3 è per il cambio della modalità di gioco
+            packet.getIntegers().write(0, 3);
+
+            // Imposta la nuova modalità di gioco
+            packet.getFloat().write(0, gamemode);
+
+            // Invia il pacchetto al giocatore
+            ProtocolLibrary.getProtocolManager().sendServerPacket(player, packet);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
